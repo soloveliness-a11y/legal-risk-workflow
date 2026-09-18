@@ -7,7 +7,7 @@ description: |
   触发词：企查查、工商查询、尽调采集、工商扫描、qcc-scan；旧称 qcc_scan
 metadata:
   version: "2.0"
-  bundle: "0.2.0"
+  bundle: "0.2.1"
   tags: "私募, 风控, 尽调, 数据采集, 能力型, 跨阶段"
 ---
 # qcc-scan — 尽调数据采集规范

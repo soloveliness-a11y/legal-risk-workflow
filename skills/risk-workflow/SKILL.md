@@ -5,7 +5,7 @@ description: |
   触发词：风控流程、尽调、dd-prep、dd-check、dd-interview、risk-report、report-review、txn-docs、post-invest-check、qcc-scan、industry-research、legal-research、项目状态、下一步
 metadata:
   version: "8.1"
-  bundle: "0.2.0"
+  bundle: "0.2.1"
   tags: "私募, 风控, 工作流, 法律, 尽调, 编排器, DAG"
 ---
 

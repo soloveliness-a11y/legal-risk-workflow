@@ -1,6 +1,6 @@
 # AI Agent 风控工作流使用指南
 
-> 版本：v0.2.0（与 [skills/risk-workflow/CONTRACT.md](../skills/risk-workflow/CONTRACT.md) 对应）。本指南描述系统的用法与边界；技能内部规则以各 SKILL.md 与 CONTRACT 为准，两者不一致时以 CONTRACT 为准。
+> 版本：v0.2.1（与 [skills/risk-workflow/CONTRACT.md](../skills/risk-workflow/CONTRACT.md) 对应）。本指南描述系统的用法与边界；技能内部规则以各 SKILL.md 与 CONTRACT 为准，两者不一致时以 CONTRACT 为准。
 > 本系统不构成法律意见。生成的尽调结论、风险评级、报告和交易文件均须由具备经验和权限的专业人员独立复核（见 [README 免责声明](../README.md)）。
 
 ## 1. 这是什么
@@ -128,7 +128,7 @@ python3 scripts/validate_delivery.py projects/{项目名}/
 四类外部依赖全部默认关闭或可缺省，见 CONTRACT §7 与 [SECURITY_PRIVACY.md](../SECURITY_PRIVACY.md)：
 
 - **工商数据源**：企查查 CLI 适配器或人工按公开渠道采集，同一 schema（qcc_cache.json）。缓存超过 7 天触发复查。
-- **OCR**：扫描件先试读、后 OCR。合同、员工名册、财务报表、资产与 IP 清单属敏感类别，禁止上传外部 OCR 服务（脚本默认拒绝，须显式 `--allow-external-upload` 且仅限非敏感材料）。
+- **OCR**：扫描件先试读、后 OCR。合同、员工名册、财务报表、访谈材料、尽调报告、投资建议书等 S1 敏感材料默认禁止上传外部服务（本地 OCR 或人工转录）；已核验服务商保密义务且承诺不用于训练的，可配置 `paddleocr.s1_policy: trusted-provider` 后经逐次确认上传。
 - **第二信源**：内部知识库类检索。URL 导入须显式确认（`--allow-external-send`）。
 - **法源检索**：legal-research 的适配器接口；无适配器时人工查官方文本并按 AC3 标注，禁止凭模型记忆断言条号。
 

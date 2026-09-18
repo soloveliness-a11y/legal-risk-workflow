@@ -1,4 +1,5 @@
 """CLI 冒烟与外传确认门槛。"""
+import os
 import subprocess
 import sys
 
@@ -37,6 +38,18 @@ def test_paddleocr_upload_gate_default_deny(repo_root, tmp_path):
     r = _run(repo_root, "scripts/tools/paddleocr_api.py", str(target))
     assert r.returncode == 4, "未带 --allow-external-upload 应拒绝上传（exit 4）"
     assert "未获外传确认" in r.stderr
+
+
+def test_paddleocr_gate_trusted_provider_hint(repo_root, tmp_path, monkeypatch):
+    target = tmp_path / "scan2.pdf"
+    target.write_bytes(b"%PDF-fake")
+    env = dict(os.environ, PADDLEOCR_S1_POLICY="trusted-provider")
+    r = subprocess.run(
+        [sys.executable, "scripts/tools/paddleocr_api.py", str(target)],
+        cwd=repo_root, capture_output=True, text=True, env=env,
+    )
+    assert r.returncode == 4
+    assert "信任服务商模式" in r.stderr
 
 
 def test_paddleocr_upload_gate_passes_then_fails_on_missing_file(repo_root, tmp_path):

@@ -6,7 +6,7 @@ description: |
   Phase 1 主入口 Skill。触发词：尽调准备、dd-prep、尽调清单、访谈提纲、风险假设、知识积累；旧称 dd_prep
 metadata:
   version: "6.1"
-  bundle: "0.2.0"
+  bundle: "0.2.1"
   tags: "私募, 尽调, 风控, 法律, 实操, DAG"
 ---
 
@@ -73,7 +73,7 @@ python3 {workspace}/scripts/tools/risk_screener.py --qcc-cache {workspace}/proje
 
 ### 材料预处理规则
 
-- 已知盖章扫描件（外部律所报告、工商档案等）直接判定为扫描版 PDF；遵循 CONTRACT §7.2 先试读，扫描件才 OCR；OCR 结果存 `01_dd_prep/` 复用，命名：投资建议书→`im_report_ocr.md`、前轮法律报告→`legal_dd_report_ocr.md`、前轮财务报告→`fin_dd_report_ocr.md`、其他→`{简称}_ocr.md`；
+- 已知盖章扫描件（外部律所报告、工商档案等）直接判定为扫描版 PDF；遵循 CONTRACT §7.2 先试读，扫描件才 OCR——**外部律所/会所报告与投资建议书属 S1 敏感材料，只能本地 OCR 或人工转录，禁止上传外部服务**（工商公示档案可外传）；OCR 结果存 `01_dd_prep/` 复用，命名：投资建议书→`im_report_ocr.md`、前轮法律报告→`legal_dd_report_ocr.md`、前轮财务报告→`fin_dd_report_ocr.md`、其他→`{简称}_ocr.md`；
 - 大文件（>30 页或 >5MB：前轮尽调报告、审计报告、招股书等）先经 doc_preprocessor.py 预处理（`--mode legal_risk` 法律聚焦 / `full_text` 全文）；复杂表格：xlsx/csv → xlsx Skill 读取，PDF 复杂表格禁止 OCR、截图标注「需人工确认」；财务报表/员工花名册/合同/资产/IP 清单一律禁止 OCR。
 
 **Step 1.1 输出**：`01_dd_prep/` 下 qcc_cache.json、findings_summary.json、research_*.md + sources_*.json、risk_screening_card.md/.json；`02_dd_check/available_materials.json`。确定性标签：工商数据 → ✅已确认；行业研究/公开检索 → [推断] 或 📌待核实（需后续验证）。
@@ -104,9 +104,9 @@ python3 {workspace}/scripts/tools/risk_screener.py --qcc-cache {workspace}/proje
 > 多个假设指向同一风险源时，标注关联关系
 ```
 
-**生成原则：** ① 数量以覆盖工商数据与项目特征指向的方向为准，避免发散（篇幅参考 3-7 个，不是配额）；② 来源透明：每个假设必须追溯到工商数据或项目特征；③ 优先级分级：按对交易与上市影响的判断区分高/中/低，聚焦核查资源到最关键方向（分级不设数量配额，依据不足时宁可不设"高"）；④ 建议具体：不是「关注税务」，而是「外资转内资过程中的税务合规风险」；⑤ **不做结论**：假设是方向性预判，不替代后续核查和报告结论。
+**生成原则：** ① 以完整覆盖工商数据与项目特征指向的方向为准，避免发散，数量不设参考区间；② 来源透明：每个假设必须追溯到工商数据或项目特征；③ 优先级分级：按对交易与上市影响的判断区分高/中/低，聚焦核查资源到最关键方向（分级不设数量配额，依据不足时宁可不设"高"）；④ 建议具体：不是「关注税务」，而是「外资转内资过程中的税务合规风险」；⑤ **不做结论**：假设是方向性预判，不替代后续核查和报告结论。
 
-天使项目简化：3 个左右假设即可，聚焦创始人 / IP / 前轮条款。同时更新 `project_dossier.md` §12（预填风险信号——来自假设而非确认风险）。
+天使项目简化：聚焦创始人 / IP / 前轮条款三类方向，数量按实际信号决定。同时更新 `project_dossier.md` §12（预填风险信号——来自假设而非确认风险）。
 
 **[子确认：假设是否充分？]**（CONTRACT §4.2，非阻断）——向审批人展示摘要（假设数量 / 优先级分布 / 已覆盖与未覆盖方向），口头确认即可，project_log 记一行。充分 → Step 1.3；不充分 → 回 Step 1.1 补充知识积累。
 

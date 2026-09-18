@@ -3,7 +3,7 @@ name: report-review
 description: 风控复核与大预审支持 — 风控报告初稿完成后双层复核（第一层AI自查7项+第二层整体风险判断复核6维，含同类案例对照与ROI量化分级）、风险判断校准、按需增量核查协议（A/B/C分类+3轮上限）、版本管理（V0.xd→V1.0d封版+轻量自检）、人工精校闭环（措辞沉淀writing_patterns）、大预审材料（一页纸风险摘要+投委会QA预案）。触发词：风控复核、report-review、大预审、报告复核、投委会准备、答辩要点（旧称 report_review）
 metadata:
   version: "5.2"
-  bundle: "0.2.0"
+  bundle: "0.2.1"
   tags: "私募, 风控, 复核, 大预审, 报告, 分层复核"
 ---
 

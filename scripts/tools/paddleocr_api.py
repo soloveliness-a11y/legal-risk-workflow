@@ -20,8 +20,10 @@ PaddleOCR-VL API 调用脚本
 
 数据边界（重要）：
   本脚本会把文件内容完整上传到 config 中配置的外部 OCR 服务。
-  合同、员工花名册、财务资料等敏感材料禁止经本脚本处理（与 dd-prep SKILL 的
-  OCR 边界一致）。运行必须带 --allow-external-upload，或在 config.yaml 中
+  S1 敏感材料（合同、员工花名册、财务资料、访谈材料、尽调报告、投资建议书等，
+  分级见 SECURITY_PRIVACY.md）禁止经本脚本处理；仅已确认公开可获得的材料
+  （公告、监管文件、招股书、工商公示档案等）可在确认后上传。
+  运行必须带 --allow-external-upload，或在 config.yaml 中
   设置 paddleocr.allow_upload: true，缺省一律拒绝上传并退出。
 
 环境变量（可选，覆盖 config 值）：
@@ -63,6 +65,7 @@ DEFAULT_TOKEN = os.environ.get("PADDLEOCR_TOKEN", _cfg.get("paddleocr.token", ""
 _PADDLEOCR_TIMEOUT = _cfg.get_int("paddleocr.timeout", 120)
 _PADDLEOCR_RETRIES = _cfg.get_int("paddleocr.retries", 3)
 _UPLOAD_CONFIRMED_BY_CONFIG = _cfg.get_bool("paddleocr.allow_upload", False)
+_S1_POLICY = str(_cfg.get("paddleocr.s1_policy", "deny")).strip().lower()
 
 # ── 文件类型映射 ──
 PDF_EXTENSIONS = {".pdf"}
@@ -185,9 +188,20 @@ def main():
     # 外传确认门槛：文件内容将上传到外部服务，必须显式确认
     if not (args.allow_external_upload or _UPLOAD_CONFIRMED_BY_CONFIG):
         size = os.path.getsize(args.file_path) if os.path.isfile(args.file_path) else "?"
+        if _S1_POLICY == "trusted-provider":
+            gate_hint = (
+                "   当前为信任服务商模式（使用者已核验该服务商保密义务且承诺不用于模型训练）。\n"
+                "   确认本文件可交由该服务商处理后，加 --allow-external-upload 重试。"
+            )
+        else:
+            gate_hint = (
+                "   确认该文件不属于 S1 敏感材料（合同、员工花名册、财务资料、访谈材料、尽调报告、\n"
+                "   投资建议书等；分级见 SECURITY_PRIVACY.md）后，加 --allow-external-upload 重试；\n"
+                "   已核验服务商保密与不训练承诺的，可在 config.yaml 设置 paddleocr.s1_policy: trusted-provider。"
+            )
         print(
             f"⛔ 未获外传确认：本脚本会把文件内容完整上传到外部 OCR 服务（{args.file_path}，{size} bytes）。\n"
-            "   确认该文件不含合同、员工花名册、财务资料等敏感材料后，加 --allow-external-upload 重试；\n"
+            f"{gate_hint}\n"
             "   或在 config.yaml 设置 paddleocr.allow_upload: true（相当于全局确认，慎用）。\n"
             "   数据边界说明见 SECURITY_PRIVACY.md。",
             file=sys.stderr,
@@ -195,7 +209,10 @@ def main():
         sys.exit(4)
 
     if args.allow_external_upload or _UPLOAD_CONFIRMED_BY_CONFIG:
-        print("⚠️  已确认外传：文件内容将上传到外部 OCR 服务。", file=sys.stderr)
+        if _S1_POLICY == "trusted-provider":
+            print("⚠️  已确认外传（信任服务商模式）：文件内容将上传到外部 OCR 服务。", file=sys.stderr)
+        else:
+            print("⚠️  已确认外传：文件内容将上传到外部 OCR 服务。", file=sys.stderr)
 
     # 解析文件类型
     if args.file_type == "auto":

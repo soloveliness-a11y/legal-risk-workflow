@@ -6,7 +6,7 @@ description: |
   触发词：工作流复盘、流程优化、workflow-retro、复盘、优化工作流
 metadata:
   version: "2.0"
-  bundle: "0.2.0"
+  bundle: "0.2.1"
   tags: "私募, 风控, 复盘, 流程优化, 元技能"
 ---
 

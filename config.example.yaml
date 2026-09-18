@@ -17,6 +17,7 @@ paddleocr:
   api_url: ""              # API 地址（必填，如 https://xxx.aistudio-app.com/layout-parsing）
   token: ""                # API Token（必填）
   allow_upload: false      # 文件外传确认（true=免 --allow-external-upload 开关，慎用）
+  s1_policy: "deny"        # deny=敏感材料（S1）一律禁传；trusted-provider=已核验服务商保密义务与不用于训练承诺后，S1 经逐次确认可上传
 
 # ── 工商数据源适配器（可选；默认手工采集模式，见 qcc-scan SKILL）────
 qcc:
