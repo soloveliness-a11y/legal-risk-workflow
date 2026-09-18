@@ -5,8 +5,8 @@ description: |
   实操逻辑：工商数据先行 → 补充清单（非全盘重发）→ 访谈聚焦法律方向 → 风险分级留待报告阶段。
   Phase 1 主入口 Skill。触发词：尽调准备、dd-prep、尽调清单、访谈提纲、风险假设、知识积累；旧称 dd_prep
 metadata:
-  version: "6.1"
-  bundle: "0.2.2"
+  version: "6.2"
+  bundle: "0.3.0"
   tags: "私募, 尽调, 风控, 法律, 实操, DAG"
 ---
 
@@ -22,7 +22,7 @@ metadata:
 
 前提：投资经理已通过小预审，风控资源已分配。输入字段——必填：project_name（被投企业工商全称）、investment_stage（天使/Pre-A/A/B/C/Pre-IPO/定增/基石/二轮）、industry（细分赛道）、project_type（直投/投顾/S基金/子基金）、im_report（投资经理小预审材料路径）；可选：prior_dd_report（前轮融资尽调报告）、company_docs（PPT/官网等）、qcc_screenshot（工商预查截图）。启动时向投资经理收集，路径缺失则询问，不绕过。**字段值未明示时的缺省规则**：按可获信息标签化预判（📌待核实），无法预判的按「成长期 + 直投」默认档执行，缺省选择连同依据列入 CP1 呈报项由审批人确认，确认后回填 Dossier §0；不得静默编造轮次或类型。
 
-收集完毕后按 CONTRACT §9 执行一页启动自检；Dossier 不存在时按「Dossier 初始化」时点规则处理。流程：Step 1.1 知识积累 → 1.2 风险假设（§4.2 子确认）→ 1.3 尽调清单 → 1.4 访谈提纲 → CP1（§4.1，阻断性）→ Phase 2，信息不足时回 Step 1.1（标准见 1.4.2）。每个 Step 独立可调用；分支决策写 project_log 一行（日期/分支点/决策/理由），不设模板。
+收集完毕后按 CONTRACT §9 执行一页启动自检；Dossier 不存在时按「Dossier 初始化」时点规则处理。流程：Step 1.1 知识积累 → 1.2 风险假设 → 1.3 尽调清单 → 1.4 访谈提纲 → CP1（§4.1，阻断性）→ Phase 2，信息不足时回 Step 1.1（标准见 1.4.2）。每个 Step 独立可调用；分支决策写 project_log 一行（日期/分支点/决策/理由），不设模板。
 
 ---
 
@@ -66,17 +66,17 @@ metadata:
 ### 1.1.5 风险初筛卡（risk_screener.py 确定性预筛）
 
 ```bash
-python3 {workspace}/scripts/tools/risk_screener.py --qcc-cache {workspace}/projects/{project_name}/01_dd_prep/qcc_cache.json --output {workspace}/projects/{project_name}/01_dd_prep/risk_screening_card.md --project-name "{公司全称}"
+python3 {workspace}/scripts/tools/risk_screener.py --qcc-cache {workspace}/projects/{project_name}/01_dd_prep/qcc_cache.json --output {workspace}/projects/{project_name}/01_dd_prep/risk_screening_card.json --format json --project-name "{公司全称}"
 ```
 
-脚本按固定阈值检查 7 项指标：股权出质/冻结、诉讼风险、行政处罚、被执行人/失信、IPO 历史、实缴比例、股权集中度，自动打标 🔴/🟡/🟢，零 token 消耗、结果确定，替代 LLM 隐式判断。脚本输出后 LLM 补充两项：**行业专项指标**（脚本仅覆盖通用指标，按行业追加 1-3 项，如 AI→算法备案、医疗→集采、半导体→出口管制）；**综合判断 overall_impression**（结合风险假设与行业研究做最终定性）。最终版写入 `risk_screening_card.json`；脚本失败时按异常表处理。
+初筛卡只落盘这一个 JSON 文件（结构化、可 diff、供 Dossier §12 提取与 CP1 呈报复用）；需要阅读版时按 JSON 渲染摘要即可，不另存 md 副本。脚本按固定阈值检查 7 项指标：股权出质/冻结、诉讼风险、行政处罚、被执行人/失信、IPO 历史、实缴比例、股权集中度，自动打标 🔴/🟡/🟢，零 token 消耗、结果确定，替代 LLM 隐式判断。脚本输出后 LLM 在同一 JSON 内补充两项：**行业专项指标**（脚本仅覆盖通用指标，按行业追加 1-3 项，如 AI→算法备案、医疗→集采、半导体→出口管制）；**综合判断 overall_impression**（结合风险假设与行业研究做最终定性）。脚本失败时按异常表处理。
 
 ### 材料预处理规则
 
 - 已知盖章扫描件（外部律所报告、工商档案等）直接判定为扫描版 PDF；遵循 CONTRACT §7.2 先试读，扫描件才 OCR——**外部律所/会所报告与投资建议书属 S1 敏感材料，只能本地 OCR 或人工转录，禁止上传外部服务**（工商公示档案可外传）；OCR 结果存 `01_dd_prep/` 复用，命名：投资建议书→`im_report_ocr.md`、前轮法律报告→`legal_dd_report_ocr.md`、前轮财务报告→`fin_dd_report_ocr.md`、其他→`{简称}_ocr.md`；
 - 大文件（>30 页或 >5MB：前轮尽调报告、审计报告、招股书等）先经 doc_preprocessor.py 预处理（`--mode legal_risk` 法律聚焦 / `full_text` 全文）；复杂表格：xlsx/csv → xlsx Skill 读取，PDF 复杂表格禁止 OCR、截图标注「需人工确认」；财务报表/员工花名册/合同/资产/IP 清单一律禁止 OCR。
 
-**Step 1.1 输出**：`01_dd_prep/` 下 qcc_cache.json、findings_summary.json、research_*.md + sources_*.json、risk_screening_card.md/.json；`02_dd_check/available_materials.json`。确定性标签：工商数据 → ✅已确认；行业研究/公开检索 → [推断] 或 📌待核实（需后续验证）。
+**Step 1.1 输出**：`01_dd_prep/` 下 qcc_cache.json、findings_summary.json、research_*.md + sources_*.json、risk_screening_card.json；`02_dd_check/available_materials.json`。确定性标签：工商数据 → ✅已确认；行业研究/公开检索 → [推断] 或 📌待核实（需后续验证）。
 
 ---
 
@@ -108,7 +108,7 @@ python3 {workspace}/scripts/tools/risk_screener.py --qcc-cache {workspace}/proje
 
 天使项目简化：聚焦创始人 / IP / 前轮条款三类方向，数量按实际信号决定。同时更新 `project_dossier.md` §12（预填风险信号——来自假设而非确认风险）。
 
-**[子确认：假设是否充分？]**（CONTRACT §4.2，非阻断）——向审批人展示摘要（假设数量 / 优先级分布 / 已覆盖与未覆盖方向），口头确认即可，project_log 记一行。充分 → Step 1.3；不充分 → 回 Step 1.1 补充知识积累。
+假设充分性不单独停顿确认（CONTRACT §4.2）：假设摘要（数量 / 优先级分布 / 已覆盖与未覆盖方向）随 CP1 呈报一并审批。机械性的信息回补由 Step 1.4.2 最低信息集判断把关——三文件不齐或高优先级假设无任何来源支撑时回 Step 1.1 补充，不依赖人工确认。
 
 ---
 
@@ -250,7 +250,7 @@ python3 {workspace}/scripts/tools/risk_screener.py --qcc-cache {workspace}/proje
 
 ### 1.4.3 CP1 尽调启动确认（CONTRACT §4.1，阻断性）
 
-Step 1.4 完成后**暂停**，向审批人展示三件产出：风险假设清单（risk_hypotheses.md 摘要）+ 尽调清单（内外双版本覆盖范围）+ 访谈提纲（结构）。
+Step 1.4 完成后**暂停**，向审批人展示：风险假设清单（risk_hypotheses.md 摘要）+ 尽调清单（内外双版本覆盖范围）+ 访谈提纲（结构）+ 推断与缺省字段（investment_stage / project_type 等，含依据）。
 
 - 审批人明确确认（通过/有条件通过）后才进入 Phase 2（dd-check）；未确认时技能停止并等待。
 - 确认记录写 project_log.md 一行：`[CP1] {日期} {审批人} 通过/有条件通过 {意见摘要}`；有条件通过的修改意见执行完毕后一并记录。

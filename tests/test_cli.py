@@ -1,4 +1,5 @@
 """CLI 冒烟与外传确认门槛。"""
+import json
 import os
 import subprocess
 import sys
@@ -76,3 +77,17 @@ def test_risk_screener_on_synthetic_fixture(repo_root, tmp_path):
     assert "关注" in card, "初筛卡应输出关注分级"
     assert "无行政处罚" in card, "dict 型 administrative_penalty=0 应判 green"
     assert "行政处罚': 0" not in card and '行政处罚": 0' not in card, "不得把原始 dict 转写进卡片"
+
+
+def test_risk_screener_json_format(repo_root, tmp_path):
+    """json 是项目内落盘唯一形态：结构可解析、含 llm_supplement 空位、指标与 md 同源。"""
+    out = tmp_path / "card.json"
+    r = _run(repo_root, "scripts/tools/risk_screener.py",
+             "--qcc-cache", "examples/synthetic-demo/materials/qcc_cache_manual.json",
+             "--output", str(out), "--format", "json")
+    assert r.returncode == 0, r.stderr
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["overall"]["level"], "缺总体评级"
+    assert len(data["indicators"]) >= 7, "7 项通用指标应齐全"
+    assert "llm_supplement" in data and data["llm_supplement"]["industry_specific_indicators"] == []
+    assert data["llm_supplement"]["overall_impression"] is None

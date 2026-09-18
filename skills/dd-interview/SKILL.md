@@ -2,8 +2,8 @@
 name: dd-interview
 description: 现场访谈纪要 — 将冗长、口语化的转写稿转化为"零信息损耗"、逻辑严密的商业书面纪要，并从多场次访谈中按四维度归纳关注要点。含外置纠错字典、无损重写与完整性校验（AC1 验收）、多场次归纳、待核实事项融入。支持批量逐份处理。触发词：访谈纪要、dd-interview、转写稿、访谈记录、会议纪要整理、尽调访谈（旧称 dd_interview）
 metadata:
-  version: "6.0"
-  bundle: "0.2.2"
+  version: "6.1"
+  bundle: "0.3.0"
   tags: "私募, 尽调, 访谈, 纪要, 零信息损耗, 逻辑重构, 多场次归纳, 纠错字典"
 ---
 
@@ -38,7 +38,7 @@ metadata:
 | §1 数据总线 | 产出落 `03_dd_interview/`：纪要 md（docx 可选）、interview_result.json（模块A完成后：sessions 逐场追加、四维度归纳等汇总字段留空待模块B填充，文件头部 _stage 字段标注 "module_a"/"module_b"）、pending_items.json（残留项） |
 | §2 Dossier | 模块A 每场→§4/§7-§10/§15；模块B→§12-§14/§0；冲突按 §2.4 |
 | §3 output.json | 最小 schema + 扩展字段 `session_count`、`modules_completed` |
-| §4 检查点 | 大纲/纪要/归纳确认走 §4.2 子确认（建议性）；Phase 2 末 CP2 由主调度器把关 |
+| §4 检查点 | 大纲/纪要/归纳等中间判断默认并入 CP2 收口呈报（§4.2，不单独停顿）；Phase 2 末 CP2 语义见 §4.1 |
 | §6 验收 | AC1 零损失验收（本技能核心验收） |
 | §8 文档产出 | md 先行；docx 转换可选、工具经 config 与宿主路径解耦 |
 | §9 启动自检 | 每次执行前一页自检 |

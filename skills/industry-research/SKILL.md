@@ -6,7 +6,7 @@ description: |
   触发词：行业研究、行业调研、industry-research、专项调研；旧称 industry_research
 metadata:
   version: "2.0"
-  bundle: "0.2.2"
+  bundle: "0.3.0"
   tags: "私募, 风控, 行业研究, 尽调, 能力型, 跨阶段"
 ---
 # industry-research — 行业研究能力

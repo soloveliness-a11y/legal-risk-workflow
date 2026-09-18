@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 import re
 """
-风险初筛卡生成器 V1.0
+风险初筛卡生成器 V1.1
 从 qcc_cache.json 提取关键风险指标，按阈值生成红/黄/绿三色风险初筛卡。
 
 用法:
-  python3 risk_screener.py --qcc-cache ./01_dd_prep/qcc_cache.json --output ./01_dd_prep/risk_screening_card.md
-  python3 risk_screener.py --qcc-cache ./qcc_cache.json --project-name "某公司"
+  python3 risk_screener.py --qcc-cache ./01_dd_prep/qcc_cache.json --output ./01_dd_prep/risk_screening_card.json --format json
+  python3 risk_screener.py --qcc-cache ./qcc_cache.json --project-name "某公司"          # stdout 输出 Markdown
   python3 risk_screener.py --qcc-cache ./qcc_cache.json --thresholds-file ./thresholds.json
   python3 risk_screener.py --init-thresholds
+
+项目内初筛卡只落盘 JSON（结构化、可 diff，LLM 在 llm_supplement 内补写两项）；
+Markdown 为阅读版，按需渲染，不落盘。
 """
 
 import argparse
@@ -272,10 +275,14 @@ LABEL_MAP = {"red": "高风险", "yellow": "关注", "green": "低风险"}
 
 # ── 核心生成逻辑 ──────────────────────────────────────────────
 
-def generate_screening_card(qcc_data, project_name=None):
-    """生成风险初筛卡"""
-    name = project_name or qcc_data.get("project_name", qcc_data.get("company_full_name", "未知项目"))
-    
+def screen(qcc_data, project_name=None):
+    """结构化初筛：返回 dict（--format json 的输出即此结构）。
+
+    llm_supplement 预置空位：行业专项指标与综合判断由 LLM 在同一 JSON 内补写，
+    不另存第二份文件。
+    """
+    name = project_name or qcc_data.get("project_name") or qcc_data.get("basic_info", {}).get("company_name", "未知项目")
+
     results = []
     for key, classifier in CLASSIFIERS.items():
         level, detail = classifier(qcc_data)
@@ -285,13 +292,11 @@ def generate_screening_card(qcc_data, project_name=None):
             "level": level,
             "detail": detail
         })
-    
-    # 统计
+
     red_count = sum(1 for r in results if r["level"] == "red")
     yellow_count = sum(1 for r in results if r["level"] == "yellow")
     green_count = sum(1 for r in results if r["level"] == "green")
-    
-    # 总体评级
+
     if red_count >= 2:
         overall = "🔴 高风险"
         overall_detail = f"存在{red_count}项高风险指标，建议审慎评估"
@@ -307,58 +312,79 @@ def generate_screening_card(qcc_data, project_name=None):
     else:
         overall = "🟢 低风险"
         overall_detail = "各项指标均正常"
-    
-    # 生成 Markdown
-    lines = []
-    lines.append(f"# 风险初筛卡：{name}")
-    lines.append("")
-    lines.append(f"> 生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    lines.append(f"> 数据来源：qcc_cache.json（工商数据缓存，数据源无关）")
-    lines.append("")
-    lines.append("## 总体评级")
-    lines.append("")
-    lines.append(f"**{overall}** — {overall_detail}")
-    lines.append("")
-    lines.append(f"统计：🔴 {red_count}项  🟡 {yellow_count}项  🟢 {green_count}项")
-    lines.append("")
-    
+
     # 按风险等级排序（红→黄→绿）
     order = {"red": 0, "yellow": 1, "green": 2}
     results.sort(key=lambda r: order[r["level"]])
-    
+
+    risks = qcc_data.get("risks", {})
+    legal_issues = risks.get("关键法律问题_from_legal_dd", [])
+
+    return {
+        "project_name": name,
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "data_source": "qcc_cache.json（工商数据缓存，数据源无关）",
+        "overall": {"level": overall, "detail": overall_detail},
+        "counts": {"red": red_count, "yellow": yellow_count, "green": green_count},
+        "indicators": results,
+        "legal_issues_from_external_dd": legal_issues,
+        "special_tags": qcc_data.get("special_tags", []),
+        "llm_supplement": {"industry_specific_indicators": [], "overall_impression": None},
+        "disclaimer": "本初筛卡基于工商数据缓存（数据源无关 schema）自动生成，仅供参考，不构成投资建议。实际风险判断需结合完整尽调。",
+    }
+
+
+def generate_screening_card(qcc_data, project_name=None):
+    data = screen(qcc_data, project_name)
+    overall = data["overall"]
+    counts = data["counts"]
+
+    # 生成 Markdown
+    lines = []
+    lines.append(f"# 风险初筛卡：{data['project_name']}")
+    lines.append("")
+    lines.append(f"> 生成时间：{data['generated_at']}")
+    lines.append(f"> 数据来源：{data['data_source']}")
+    lines.append("")
+    lines.append("## 总体评级")
+    lines.append("")
+    lines.append(f"**{overall['level']}** — {overall['detail']}")
+    lines.append("")
+    lines.append(f"统计：🔴 {counts['red']}项  🟡 {counts['yellow']}项  🟢 {counts['green']}项")
+    lines.append("")
+
     lines.append("## 指标明细")
     lines.append("")
     lines.append("| # | 指标 | 等级 | 说明 |")
     lines.append("|---|------|------|------|")
-    for i, r in enumerate(results, 1):
+    for i, r in enumerate(data["indicators"], 1):
         emoji = EMOJI_MAP[r["level"]]
         label = LABEL_MAP[r["level"]]
         lines.append(f"| {i} | {r['description']} | {emoji} {label} | {r['detail']} |")
-    
+
     lines.append("")
-    
+
     # 关键法律问题（如有）
-    risks = qcc_data.get("risks", {})
-    legal_issues = risks.get("关键法律问题_from_legal_dd", [])
+    legal_issues = data["legal_issues_from_external_dd"]
     if legal_issues:
         lines.append("## 外部律所已识别风险（来自法律尽调报告）")
         lines.append("")
         for issue in legal_issues:
             lines.append(f"- {issue}")
         lines.append("")
-    
+
     # 特殊标签
-    tags = qcc_data.get("special_tags", [])
+    tags = data["special_tags"]
     if tags:
         lines.append("## 风险标签")
         lines.append("")
         lines.append(", ".join(f"`{t}`" for t in tags))
         lines.append("")
-    
+
     # 免责声明
     lines.append("---")
-    lines.append("*本初筛卡基于工商数据缓存（数据源无关 schema）自动生成，仅供参考，不构成投资建议。实际风险判断需结合完整尽调。*")
-    
+    lines.append(f"*{data['disclaimer']}*")
+
     return "\n".join(lines)
 
 
@@ -366,16 +392,18 @@ def generate_screening_card(qcc_data, project_name=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="风险初筛卡生成器 — 从 qcc_cache.json 提取风险指标生成 Markdown 初筛卡"
+        description="风险初筛卡生成器 — 从 qcc_cache.json 提取风险指标，输出 Markdown 或 JSON 初筛卡"
     )
     parser.add_argument("--qcc-cache", type=str, help="qcc_cache.json 文件路径")
     parser.add_argument("--output", "-o", type=str, help="输出文件路径（默认输出到 stdout）")
+    parser.add_argument("--format", choices=["md", "json"], default="md",
+                        help="输出格式：md（阅读版，默认）或 json（结构化，项目内落盘形态；LLM 在 llm_supplement 内补写行业专项指标与综合判断）")
     parser.add_argument("--project-name", type=str, help="项目名称（覆盖 qcc_cache.json 中的 project_name）")
     parser.add_argument("--init-thresholds", action="store_true", help="导出默认阈值配置到 thresholds.json")
     parser.add_argument("--thresholds-file", type=str, help="自定义阈值配置文件路径")
-    
+
     args = parser.parse_args()
-    
+
     # 导出默认阈值
     if args.init_thresholds:
         output_path = args.output or "risk_screener_thresholds.json"
@@ -383,29 +411,32 @@ def main():
             json.dump(DEFAULT_THRESHOLDS, f, ensure_ascii=False, indent=2)
         print(f"默认阈值配置已导出到: {output_path}")
         return
-    
+
     # 必须提供 qcc_cache
     if not args.qcc_cache:
         parser.error("请提供 --qcc-cache 参数，或使用 --init-thresholds 导出默认阈值")
-    
+
     cache_path = Path(args.qcc_cache)
     if not cache_path.exists():
         print(f"错误：文件不存在 {cache_path}", file=sys.stderr)
         sys.exit(1)
-    
+
     with open(cache_path, "r", encoding="utf-8") as f:
         qcc_data = json.load(f)
-    
-    card = generate_screening_card(qcc_data, args.project_name)
-    
+
+    if args.format == "json":
+        content = json.dumps(screen(qcc_data, args.project_name), ensure_ascii=False, indent=2) + "\n"
+    else:
+        content = generate_screening_card(qcc_data, args.project_name)
+
     if args.output:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write(card)
+            f.write(content)
         print(f"风险初筛卡已生成: {output_path}")
     else:
-        print(card)
+        print(content)
 
 
 if __name__ == "__main__":

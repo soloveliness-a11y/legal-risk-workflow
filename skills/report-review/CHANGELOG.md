@@ -4,6 +4,11 @@
 
 ## 版本记录
 
+**V5.3（2026-09-18）— 复核对齐五问与默认交付**
+
+- 第一层检查项 5 升级为"IRAC 与重大判断五问"：中🟡及以上逐项核对五问，任一缺失退回；负面清单（通用提示填充/未提供写成违法违规/未发现写成已排除）任一出现即退回
+- CP3 呈报增关键待核实事项（CP2 收口并入项：pending_materials 与 pending_items 合并视图，按对结论影响排序）
+
 **V5.2（2026-09-17）— Phase 1 Close-out：authority gate 分级 + unresolved 冲突消费**
 
 - Authority audit 改为**按报告版本分级**：V0.xd 草稿未经核验的法条引用标"待核验"（WARN）可继续迭代；CP3/V1.0d 定稿时涉及法律义务、监管要求、上市规则的实质性法律命题无有效 authority chain（effective 状态 authority_record）即 **FAIL、不得通过 CP3**、退回补验；orphan L 编号与非 effective L 按 legal_research 下游规则拦截；模型自行检索的法条同样必须正规化为 authority_record 落盘，禁止以"自行检索"绕过 registry
