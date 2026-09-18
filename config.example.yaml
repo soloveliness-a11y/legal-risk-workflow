@@ -1,0 +1,39 @@
+# ======================================================================
+# risk-workflow — 配置模板（仅可选适配器凭证与路径）
+#
+# 使用说明：
+#   1. 复制本文件为 config.yaml
+#   2. 按需填入适配器凭证——全部为可选项
+#   3. 不配置任何适配器时，核心工作流（尽调清单+资料核查+访谈纪要+
+#      报告撰写+复核+交易文件审查）以手工采集模式运行
+#
+# 适配器语义见 skills/risk-workflow/CONTRACT.md §7（本文件的节名与
+# 各适配器脚本实现对应：paddleocr_api.py / qcc 适配器 / ima 第二信源）
+# 优先级：环境变量 > config.yaml > 代码默认值
+# ======================================================================
+
+# ── OCR 适配器（扫描件识别，可插拔；未配置时扫描件走降级）──────────
+paddleocr:
+  api_url: ""              # API 地址（必填，如 https://xxx.aistudio-app.com/layout-parsing）
+  token: ""                # API Token（必填）
+  allow_upload: false      # 文件外传确认（true=免 --allow-external-upload 开关，慎用）
+
+# ── 工商数据源适配器（可选；默认手工采集模式，见 qcc-scan SKILL）────
+qcc:
+  node_path: ""                          # Node.js 所在目录或可执行文件路径（空=自动检测 PATH）
+  config_file: "~/.qcc/config.json"      # QCC CLI 配置文件路径（含认证信息）
+
+# ── 第二信源（可选增强；未配置时自动跳过，不影响主流程）────────────
+ima:
+  session_dir: "~/.config/ima/session"   # 浏览器登录 session 目录（cookies/localStorage，0600/0700 权限自动设置）
+  config_dir: "~/.config/ima"            # API 凭证目录（client_id / api_key）
+  ssl_verify: true                       # TLS 证书校验（默认开启；仅受控代理环境才可设 false，会打印醒目警告）
+  allow_send: false                      # URL 导入外传确认（true=免 --allow-external-send 开关，慎用）
+
+# ── 发布与安全扫描（scripts/tools/release_scan.py）────────────────
+security:
+  wordlist: ""             # 私有词表路径（公司名/项目名等，文件放仓库外；支持多路径逗号分隔；词表内支持 sha256: 前缀摘要行）
+
+# ── 路径配置 ────────────────────────────────────────────────────
+paths:
+  skills_dir: ""                          # 可选：需要检查宿主技能注册时填写（如 ~/.claude/skills），留空跳过

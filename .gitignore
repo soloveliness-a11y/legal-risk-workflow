@@ -1,0 +1,24 @@
+# 依赖与运行时产物
+config.yaml
+__pycache__/
+*.pyc
+node_modules/
+.env
+*.log
+
+# 系统文件
+.DS_Store
+
+# 运行时生成的缓存与产出（不属于技能源码）
+qcc_cache*.json
+output.json
+# 例外：合成演示的教学夹具（文件名形如 qcc_cache 但属源码）
+!examples/synthetic-demo/materials/qcc_cache_manual.json
+
+# 私有项目数据与本地知识库（不进入公共仓库）
+/projects/
+/private-knowledge/
+/transcribe_glossary.json
+
+# 宿主环境本地安装元数据
+**/_skillhub_meta.json
