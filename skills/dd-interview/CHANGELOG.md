@@ -17,7 +17,7 @@
 
 **V5.1（2026-05-04）— 控制论复盘优化·8项机械化约束升级**
 
-背景：workflow-retro 控制论校验发现综合合规度70%，output.json/risk_points.json从未产出（4个项目全缺），模块B归纳格式不统一。
+背景：workflow-retro 控制论校验发现 output.json/risk_points.json 在历次执行中从未产出，模块B归纳格式不统一。
 
 - **O1** ✅：output.json 列为检查点A/B阻断项（缺失不可通过）
 - **O2** ✅：risk_points.json 列为检查点B阻断项，新增完整 schema（dimensions→4维度数组+summary+pending_items_coverage）

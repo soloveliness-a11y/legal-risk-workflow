@@ -2,7 +2,7 @@
 """
 发布前匿名化与凭据扫描器
 
-用途：提交/发布前扫描仓库文本文件，检查：
+用途：提交/发布前扫描仓库文本，检查：
   1. 内置模式：手机号、邮箱、身份证号（含校验位验证）、常见 API 密钥/令牌形态
   2. 外部词表：维护者私有词（公司名、项目名、内部域名等），支持明文或 sha256 摘要行
 
@@ -12,10 +12,17 @@
     （短词的裸 sha256 可被穷举还原，仅建议对较长短语使用；短词请用本地明文词表）
   - 词表文件建议放在仓库外（如 ~/.config/legal-risk-workflow/scan_words.txt）
 
+能力边界（重要）：
+  - 默认只扫描工作树（跳过 .git 目录）
+  - --history 额外扫描 git 历史：所有可达 blob（文件历史快照）、commit message、tag message
+  - 不覆盖 GitHub Release 文案、Issue、PR、Wiki 等仅存在于远端的面——发布前须人工复核
+  - --history 只证明本地仓库历史干净；已推送后又在远端丢弃/改写的对象不在本地，无法覆盖
+
 退出码：0=未发现 1=有发现 2=参数错误
 
 用法：
-  python3 release_scan.py                      # 扫描当前仓库（内置模式 + 已配置词表）
+  python3 release_scan.py                      # 扫描工作树（内置模式 + 已配置词表）
+  python3 release_scan.py --history            # 同时扫描 git 历史（文件快照 + 提交/标签信息）
   python3 release_scan.py --wordlist ~/private/scan_words.txt
   python3 release_scan.py --show               # 显示完整命中内容（默认脱敏显示）
 """
@@ -24,6 +31,7 @@ import argparse
 import hashlib
 import os
 import re
+import subprocess
 import sys
 
 _SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -87,12 +95,16 @@ def load_wordlist(paths: list[str]) -> tuple[list[str], list[tuple[str, str]]]:
     return plain, digests
 
 
+def is_text_path(name: str) -> bool:
+    ext = os.path.splitext(name)[1].lower()
+    return name in TEXT_FILENAMES or ext in TEXT_EXTS or not ext
+
+
 def iter_text_files(root: str):
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for name in filenames:
-            ext = os.path.splitext(name)[1].lower()
-            if name in TEXT_FILENAMES or ext in TEXT_EXTS or not ext:
+            if is_text_path(name):
                 yield os.path.join(dirpath, name)
 
 
@@ -102,30 +114,38 @@ def mask(text: str) -> str:
     return text[:2] + "***" + text[-2:]
 
 
+def line_hits(line: str, plain_words: list[str], digests: list[tuple[str, str]],
+              show: bool) -> list[str]:
+    """对单行文本执行全部检测，返回命中描述列表。"""
+    hits: list[str] = []
+    for label, pattern in BUILTIN_PATTERNS:
+        for m in pattern.finditer(line):
+            text = m.group(0)
+            if label == "身份证号形态" and not valid_id_card(text):
+                continue
+            hits.append(f"{label}:{text if show else mask(text)}")
+    for word in plain_words:
+        if word and word in line:
+            hits.append(f"私有词:{word if show else mask(word)}")
+    if digests:
+        for token in re.split(r"[^\w\u4e00-\u9fff]+", line):
+            if not token:
+                continue
+            for src, digest in digests:
+                if hashlib.sha256(token.encode("utf-8")).hexdigest() == digest:
+                    hits.append(f"私有词(摘要@{os.path.basename(src)}):{token if show else mask(token)}")
+    return hits
+
+
 def scan(root: str, plain_words: list[str], digests: list[tuple[str, str]], show: bool):
+    """扫描工作树文本文件。"""
     findings: list[str] = []
     for filepath in iter_text_files(root):
         rel = os.path.relpath(filepath, root)
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 for lineno, line in enumerate(f, 1):
-                    hits = []
-                    for label, pattern in BUILTIN_PATTERNS:
-                        for m in pattern.finditer(line):
-                            text = m.group(0)
-                            if label == "身份证号形态" and not valid_id_card(text):
-                                continue
-                            hits.append(f"{label}:{text if show else mask(text)}")
-                    for word in plain_words:
-                        if word and word in line:
-                            hits.append(f"私有词:{word if show else mask(word)}")
-                    if digests:
-                        for token in re.split(r"[^\w\u4e00-\u9fff]+", line):
-                            if not token:
-                                continue
-                            for src, digest in digests:
-                                if hashlib.sha256(token.encode("utf-8")).hexdigest() == digest:
-                                    hits.append(f"私有词(摘要@{os.path.basename(src)}):{token if show else mask(token)}")
+                    hits = line_hits(line, plain_words, digests, show)
                     if hits:
                         findings.append(f"{rel}:{lineno}  {'  '.join(sorted(set(hits)))}")
         except OSError:
@@ -133,11 +153,76 @@ def scan(root: str, plain_words: list[str], digests: list[tuple[str, str]], show
     return findings
 
 
+def _git(root: str, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", root, *args], capture_output=True)
+
+
+def scan_history(root: str, plain_words: list[str], digests: list[tuple[str, str]], show: bool):
+    """扫描 git 历史中所有可达对象：文件快照 blob + commit message + tag message。"""
+    probe = _git(root, "rev-parse", "--git-dir")
+    if probe.returncode != 0:
+        print("❌ --history 需要在 git 仓库内运行（未检测到 .git）", file=sys.stderr)
+        sys.exit(2)
+
+    findings: list[str] = []
+
+    # 1) 所有可达 blob（文件历史快照），按 sha 去重
+    proc = _git(root, "rev-list", "--objects", "--all")
+    if proc.returncode != 0:
+        print(f"❌ git rev-list 失败：{proc.stderr.decode('utf-8', 'ignore').strip()}", file=sys.stderr)
+        sys.exit(2)
+    blob_paths: dict[str, str] = {}
+    for raw in proc.stdout.decode("utf-8", "ignore").splitlines():
+        parts = raw.split(" ", 1)
+        if len(parts) != 2:
+            continue
+        sha, path = parts
+        if is_text_path(os.path.basename(path)):
+            blob_paths.setdefault(sha, path)
+    for sha, path in blob_paths.items():
+        blob = _git(root, "cat-file", "blob", sha)
+        if blob.returncode != 0 or b"\x00" in blob.stdout:
+            continue
+        text = blob.stdout.decode("utf-8", "ignore")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            hits = line_hits(line, plain_words, digests, show)
+            if hits:
+                findings.append(f"history:{sha[:12]}:{path}:{lineno}  {'  '.join(sorted(set(hits)))}")
+
+    # 2) commit message
+    proc = _git(root, "log", "--all", "--format=%H%x1f%B%x1e")
+    for record in proc.stdout.decode("utf-8", "ignore").split("\x1e"):
+        if "\x1f" not in record:
+            continue
+        sha, body = record.split("\x1f", 1)
+        for lineno, line in enumerate(body.splitlines(), 1):
+            hits = line_hits(line, plain_words, digests, show)
+            if hits:
+                findings.append(f"commit-message:{sha[:12]}:{lineno}  {'  '.join(sorted(set(hits)))}")
+
+    # 3) tag message（附注标签）
+    proc = _git(root, "for-each-ref", "--format=%(refname)%00%(contents)")
+    for record in proc.stdout.decode("utf-8", "ignore").split("\n"):
+        if "\x00" not in record:
+            continue
+        ref, body = record.split("\x00", 1)
+        for lineno, line in enumerate(body.splitlines(), 1):
+            hits = line_hits(line, plain_words, digests, show)
+            if hits:
+                findings.append(f"tag-message:{ref}:{lineno}  {'  '.join(sorted(set(hits)))}")
+
+    return findings
+
+
 def main():
-    parser = argparse.ArgumentParser(description="发布前匿名化与凭据扫描器")
+    parser = argparse.ArgumentParser(
+        description="发布前匿名化与凭据扫描器（默认只扫工作树，--history 加扫 git 历史；"
+                    "GitHub Release/Issue/PR 等远端面不在扫描范围，发布前人工复核）")
     parser.add_argument("--root", default=None, help="仓库根目录（默认：脚本所在仓库根）")
     parser.add_argument("--wordlist", action="append", default=None,
                         help="私有词表路径（可重复；或经 config.yaml security.wordlist 配置）")
+    parser.add_argument("--history", action="store_true",
+                        help="同时扫描 git 历史：全部可达文件快照 + commit message + tag message")
     parser.add_argument("--show", action="store_true", help="显示完整命中内容（默认脱敏）")
     args = parser.parse_args()
 
@@ -157,11 +242,17 @@ def main():
     print(f"   内置模式 {len(BUILTIN_PATTERNS)} 类；私有词 {len(plain_words)} 条 + 摘要 {len(digests)} 条")
 
     findings = scan(root, plain_words, digests, args.show)
+    if args.history:
+        print("   含 git 历史扫描（文件快照 + commit/tag message）")
+        findings += scan_history(root, plain_words, digests, args.show)
+
     if findings:
         print(f"\n❌ 发现 {len(findings)} 处命中：\n")
         for f in findings:
             print(f"  {f}")
-        print("\n处置：真实凭据立即作废并从来源移除；私有词改写为通用表述后再提交。")
+        print("\n处置：真实凭据立即作废并从来源移除；私有词改写为通用表述后再提交。"
+              "命中于 history:/commit-message:/tag-message: 前缀的，说明 git 历史不干净，"
+              "按 ROADMAP 发布安全铁律处理（不能以普通 commit 修补）。")
         sys.exit(1)
     print("\n✅ 未发现命中（内置模式 + 已配置词表）")
     sys.exit(0)

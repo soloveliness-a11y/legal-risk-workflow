@@ -35,7 +35,7 @@ python3 scripts/validate_delivery.py projects/{项目名}/ [--phase 04_risk_repo
 | `ic_version_consistency_check.py` | 投委会版一致性自检 | report-review |
 | `entity_extractor.py` | NER 实体提取（零损失验收 AC1 辅助） | dd-interview（可选） |
 | `doc_preprocessor.py` | 大文件文本预处理 | 通用 |
-| `release_scan.py` | 发布前匿名化与凭据扫描（SECURITY.md） | 维护者/CI |
+| `release_scan.py` | 发布前匿名化与凭据扫描；默认扫工作树，`--history` 加扫 git 历史（远端 Release/Issue/PR 须人工复核，见 SECURITY.md） | 维护者/CI |
 | `ima_kb_query.py` / `ima_kb_archive.py` | 第二信源适配器示例（CONTRACT §7.3，可选；导入类操作须 `--allow-external-send`） | 可选增强 |
 
 > 已在开源重构中移除：`risk_clause_mapper.py`（关键词规则引擎，强模型直接走决策树）、`legal_ledger_generator.py`（台账由模型按 schema 直接生成）、`analysis_checker.py`（数量校验防数量不防质量）。

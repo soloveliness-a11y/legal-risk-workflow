@@ -50,8 +50,8 @@ legal_authority.json 候选记录（被误标类型，待核验）：
 ```
 
 ## 期望行为
-1. legal-research 核验发现无成文依据：L027 的 `authority_type` 修正为 `practice`，proposition 改写为经验命题（如"关联交易占比高的项目实践中通常被重点问询"），holding 注明来源为内部历史项目观察。
-2. practice 红线生效：该 record 不得进入 IRAC 的 Rule 段、不得以"依据……应当……"的法定义务句式出现；报告改为"实践中，关联交易占比较高的发行人通常受到重点问询（内部经验，非成文规则）"之类的校准性表述。
+1. legal-research 核验发现无成文依据：L027 的 `authority_type` 修正为 `practice`，proposition 改写为经验命题（如"关联交易占比高的项目实践中通常被重点问询"），holding 注明来源为实践经验观察。
+2. practice 红线生效：该 record 不得进入 IRAC 的 Rule 段、不得以"依据……应当……"的法定义务句式出现；报告改为"实践中，关联交易占比较高的发行人通常受到重点问询（实践经验归纳，非成文规则）"之类的校准性表述。
 3. 成文命题另行支持："重大关联交易应当披露并证明公允"按第44条新开 statute/exchange_rule 类 L 编号（holding 为逐字原文），Application 段按"披露与公允证明"框架重写，不再以"超30%→不予通过"推理。
 
 ## 判定标准

@@ -26,7 +26,14 @@
 提交前运行（含 CI）：
 
 ```bash
-python3 scripts/tools/release_scan.py   # 匿名化与凭据扫描（可配置私有词表）
+python3 scripts/tools/release_scan.py             # 工作树：匿名化与凭据扫描（可配置私有词表）
+python3 scripts/tools/release_scan.py --history   # 发布前加扫：git 历史文件快照 + commit/tag message
 ```
+
+扫描能力边界：
+
+- 默认只扫描工作树（跳过 `.git`）；`--history` 才覆盖本地 git 历史（全部可达文件快照、commit message、tag message）
+- GitHub Release 文案、Issue、PR、Wiki 只存在于远端，脚本无法覆盖：每次发布前人工复核 Release 正文与近期 issue/PR 措辞，确认不含私有词与内部样本构成信息
+- 已推送后又在远端丢弃或改写的对象不在本地仓库，`--history` 无法覆盖
 
 私有词表（公司名/项目名等）只保存在仓库外，经 `--wordlist` 或 `config.yaml` 的 `security.wordlist` 引入；禁止把私有词以明文 denylist 形式提交进本仓库。
