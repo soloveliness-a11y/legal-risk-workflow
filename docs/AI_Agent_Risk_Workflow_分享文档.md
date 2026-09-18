@@ -1,6 +1,6 @@
 # AI Agent 风控工作流使用指南
 
-> 版本：v0.2.1（与 [skills/risk-workflow/CONTRACT.md](../skills/risk-workflow/CONTRACT.md) 对应）。本指南描述系统的用法与边界；技能内部规则以各 SKILL.md 与 CONTRACT 为准，两者不一致时以 CONTRACT 为准。
+> 版本：v0.2.2（与 [skills/risk-workflow/CONTRACT.md](../skills/risk-workflow/CONTRACT.md) 对应）。本指南描述系统的用法与边界；技能内部规则以各 SKILL.md 与 CONTRACT 为准，两者不一致时以 CONTRACT 为准。
 > 本系统不构成法律意见。生成的尽调结论、风险评级、报告和交易文件均须由具备经验和权限的专业人员独立复核（见 [README 免责声明](../README.md)）。
 
 ## 1. 这是什么

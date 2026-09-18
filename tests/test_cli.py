@@ -74,3 +74,5 @@ def test_risk_screener_on_synthetic_fixture(repo_root, tmp_path):
     assert out.exists()
     card = out.read_text(encoding="utf-8")
     assert "关注" in card, "初筛卡应输出关注分级"
+    assert "无行政处罚" in card, "dict 型 administrative_penalty=0 应判 green"
+    assert "行政处罚': 0" not in card and '行政处罚": 0' not in card, "不得把原始 dict 转写进卡片"

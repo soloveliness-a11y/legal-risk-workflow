@@ -19,21 +19,51 @@
       "备注": "王某 10% 存在代持线索（见 BP 摘要），剔除后代持部分后控制比例需重新测算"
     },
     "list": [
-      { "name": "张某", "比例": "55%", "类型": "自然人" },
-      { "name": "李某", "比例": "20%", "类型": "自然人" },
-      { "name": "苏州星聚合伙企业（虚构）", "比例": "15%", "类型": "有限合伙（GP=张某）" },
-      { "name": "王某", "比例": "10%", "类型": "自然人" }
+      {
+        "name": "张某",
+        "比例": "55%",
+        "类型": "自然人"
+      },
+      {
+        "name": "李某",
+        "比例": "20%",
+        "类型": "自然人"
+      },
+      {
+        "name": "苏州星聚合伙企业（虚构）",
+        "比例": "15%",
+        "类型": "有限合伙（GP=张某）"
+      },
+      {
+        "name": "王某",
+        "比例": "10%",
+        "类型": "自然人"
+      }
     ]
   },
   "risks": {
     "equity_quality": "存在公示层面未显示的代持线索（BP 自述）；认缴 1,000 万实缴 0",
-    "litigation": { "开庭公告": 0, "立案信息": 0, "被执行人": 0 },
-    "administrative_penalty": { "行政处罚": 0 },
-    "pledge": { "股权出质": 0 },
+    "litigation": {
+      "开庭公告": 0,
+      "立案信息": 0,
+      "被执行人": 0
+    },
+    "administrative_penalty": {
+      "行政处罚": 0
+    },
+    "pledge": {
+      "股权出质": 0
+    },
     "history": {
       "变更记录": [
-        { "date": "2022-11", "change": "注册资本由 200 万增至 1,000 万（认缴）" },
-        { "date": "2023-03", "change": "经营范围增加集成电路设计" }
+        {
+          "date": "2022-11",
+          "change": "注册资本由 200 万增至 1,000 万（认缴）"
+        },
+        {
+          "date": "2023-03",
+          "change": "经营范围增加集成电路设计"
+        }
       ],
       "备注": "未见股改、更名记录"
     },
@@ -43,10 +73,54 @@
     }
   },
   "findings_preview": [
-    { "category": "股权", "item": "代持线索", "severity": "关注高", "fact": "BP 自述王某 10% 代张某持有，无书面协议", "source_ref": "materials/bp_summary.md" },
-    { "category": "主体", "item": "实缴为零", "severity": "关注中", "fact": "认缴 1,000 万，公示实缴 0 元，创始人承诺 2024 年内实缴已逾期", "source_ref": "manual 查询 + bp_summary.md" },
-    { "category": "业务", "item": "客户集中", "severity": "关注中", "fact": "第一大客户收入占比约 78%（BP 自述，未经审计）", "source_ref": "materials/bp_summary.md" },
-    { "category": "知识产权", "item": "专利状态不明", "severity": "关注中", "fact": "称已申请发明专利 12 项，无清单无申请号", "source_ref": "materials/bp_summary.md" },
-    { "category": "合规", "item": "招商补贴对赌", "severity": "关注低", "fact": "200 万补贴附上市/营收条件，协议未提供", "source_ref": "materials/bp_summary.md" }
+    {
+      "category": "股权",
+      "item": "代持线索",
+      "severity": "关注高",
+      "fact": "BP 自述王某 10% 代张某持有，无书面协议",
+      "source_ref": "materials/bp_summary.md"
+    },
+    {
+      "category": "主体",
+      "item": "实缴为零",
+      "severity": "关注中",
+      "fact": "认缴 1,000 万，公示实缴 0 元，创始人承诺 2024 年内实缴已逾期",
+      "source_ref": "manual 查询 + bp_summary.md"
+    },
+    {
+      "category": "业务",
+      "item": "客户集中",
+      "severity": "关注中",
+      "fact": "第一大客户收入占比约 78%（BP 自述，未经审计）",
+      "source_ref": "materials/bp_summary.md"
+    },
+    {
+      "category": "知识产权",
+      "item": "专利状态不明",
+      "severity": "关注中",
+      "fact": "称已申请发明专利 12 项，无清单无申请号",
+      "source_ref": "materials/bp_summary.md"
+    },
+    {
+      "category": "合规",
+      "item": "招商补贴对赌",
+      "severity": "关注低",
+      "fact": "200 万补贴附上市/营收条件，协议未提供",
+      "source_ref": "materials/bp_summary.md"
+    }
+  ],
+  "query_log": [
+    {
+      "query": "基础信息/股东/风险项",
+      "channel": "手工：国家企业信用信息公示系统（演示模拟）",
+      "date": "2026-09-18",
+      "result": "已采集，见 basic_info/shareholders/risks"
+    }
+  ],
+  "items": [],
+  "uncovered": [
+    "专利清单与申请号（材料未提供）",
+    "实缴凭证（公示未见实缴登记）",
+    "政府补贴协议原文（含上市/营收条件条款）"
   ]
 }

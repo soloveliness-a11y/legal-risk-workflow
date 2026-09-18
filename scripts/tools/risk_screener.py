@@ -120,16 +120,26 @@ def classify_litigation(qcc_data):
 
 
 def classify_administrative_penalty(qcc_data):
-    """行政处罚"""
+    """行政处罚（兼容 str / dict / int 数据形态）"""
     risks = qcc_data.get("risks", {})
     penalty = risks.get("administrative_penalty", "")
-    
+
+    if isinstance(penalty, dict):
+        counts = {k: v for k, v in penalty.items() if isinstance(v, (int, float)) and v}
+        if not counts:
+            return "green", "无行政处罚"
+        total = int(sum(counts.values()))
+        detail = "、".join(f"{k}{int(v)}" for k, v in counts.items())
+        return "yellow", f"存在行政处罚记录 {total} 条（{detail}），重大性待核"
+    if isinstance(penalty, (int, float)):
+        if penalty:
+            return "yellow", f"存在行政处罚记录 {int(penalty)} 条，重大性待核"
+        return "green", "无行政处罚"
+
     if not penalty or "未见" in penalty or "无" in penalty:
         return "green", "无行政处罚"
-    
     if "重大" in penalty:
         return "red", penalty
-    
     return "yellow", penalty
 
 

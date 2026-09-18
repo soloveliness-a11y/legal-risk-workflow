@@ -7,7 +7,7 @@ description: |
   被 dd-prep/risk-report/report-review/txn-docs 跨阶段调用。；旧称 legal_research
 metadata:
   version: "1.0"
-  bundle: "0.2.1"
+  bundle: "0.2.2"
   tags: "私募, 风控, 法源验证, 尽调, 能力型, 跨阶段"
 ---
 

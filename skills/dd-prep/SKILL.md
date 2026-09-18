@@ -6,7 +6,7 @@ description: |
   Phase 1 主入口 Skill。触发词：尽调准备、dd-prep、尽调清单、访谈提纲、风险假设、知识积累；旧称 dd_prep
 metadata:
   version: "6.1"
-  bundle: "0.2.1"
+  bundle: "0.2.2"
   tags: "私募, 尽调, 风控, 法律, 实操, DAG"
 ---
 
@@ -20,7 +20,7 @@ metadata:
 
 ## 输入与启动
 
-前提：投资经理已通过小预审，风控资源已分配。输入字段——必填：project_name（被投企业工商全称）、investment_stage（天使/Pre-A/A/B/C/Pre-IPO/定增/基石/二轮）、industry（细分赛道）、project_type（直投/投顾/S基金/子基金）、im_report（投资经理小预审材料路径）；可选：prior_dd_report（前轮融资尽调报告）、company_docs（PPT/官网等）、qcc_screenshot（工商预查截图）。启动时向投资经理收集，路径缺失则询问，不绕过。
+前提：投资经理已通过小预审，风控资源已分配。输入字段——必填：project_name（被投企业工商全称）、investment_stage（天使/Pre-A/A/B/C/Pre-IPO/定增/基石/二轮）、industry（细分赛道）、project_type（直投/投顾/S基金/子基金）、im_report（投资经理小预审材料路径）；可选：prior_dd_report（前轮融资尽调报告）、company_docs（PPT/官网等）、qcc_screenshot（工商预查截图）。启动时向投资经理收集，路径缺失则询问，不绕过。**字段值未明示时的缺省规则**：按可获信息标签化预判（📌待核实），无法预判的按「成长期 + 直投」默认档执行，缺省选择连同依据列入 CP1 呈报项由审批人确认，确认后回填 Dossier §0；不得静默编造轮次或类型。
 
 收集完毕后按 CONTRACT §9 执行一页启动自检；Dossier 不存在时按「Dossier 初始化」时点规则处理。流程：Step 1.1 知识积累 → 1.2 风险假设（§4.2 子确认）→ 1.3 尽调清单 → 1.4 访谈提纲 → CP1（§4.1，阻断性）→ Phase 2，信息不足时回 Step 1.1（标准见 1.4.2）。每个 Step 独立可调用；分支决策写 project_log 一行（日期/分支点/决策/理由），不设模板。
 
